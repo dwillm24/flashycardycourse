@@ -1,0 +1,24 @@
+---
+alwaysApply: true
+---
+# shadcn/ui
+
+This project uses [shadcn/ui](https://ui.shadcn.com/) for all UI. Prefer existing primitives from `components/ui/` (or the path configured after init) instead of ad-hoc HTML styling or other component libraries.
+
+## Setup
+
+If shadcn is not initialized (no [components.json](mdc:components.json) at the project root, or the CLI says the project is not set up), run:
+
+```bash
+npx shadcn@latest init
+```
+
+## Adding components
+
+If a needed primitive is missing, add it with the CLI, passing the component name from the shadcn docs. Example for the Button component:
+
+```bash
+npx shadcn@latest add button
+```
+
+Replace `button` with the desired component (e.g. `card`, `dialog`, `input`). After adding, import from the project’s configured UI path and compose pages from these pieces.
