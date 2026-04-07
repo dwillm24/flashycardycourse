@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+---
+# Database access (Drizzle only)
+
+All database interactions in this repo must use **Drizzle** and the canonical schema in [`src/db/schema.ts`](mdc:src/db/schema.ts).
+
+- **Always**: import tables/relations from `src/db/schema.ts` and build queries using Drizzle query APIs.
+- **Never**: write raw SQL strings (including `sql\`...\`` / `.query(...)` with SQL text) for app logic.
+- **Never**: re-declare table shapes/types inline (no ad-hoc `{ id, ... }` “table objects”); extend the schema instead.
+
+If a table/column/index/constraint is missing, update the Drizzle schema first, then query through it.

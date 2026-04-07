@@ -1,0 +1,19 @@
+---
+description: Data access rules: reads in Server Components, writes in Server Actions, Zod-validated typed inputs (no FormData)
+alwaysApply: true
+---
+
+# Data access + validation rules
+
+## Read vs write boundaries (non-negotiable)
+
+- **Data retrieval**: must be done via **Server Components** (no client-side data fetching for app data).
+- **DB mutations** (`INSERT` / `UPDATE` / `DELETE`): must be done via **Server Actions**.
+
+## Validation (non-negotiable)
+
+- **Validation library**: always validate inputs using **Zod**.
+- **Typed inputs only**: any data passed to a Server Action must:
+  - have an explicit **TypeScript type**, and
+  - be **validated by Zod** inside the Server Action.
+- **Never** use `FormData` as the input type for Server Actions.

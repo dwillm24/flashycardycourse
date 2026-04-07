@@ -1,0 +1,27 @@
+---
+description: Clerk auth + strict per-user data ownership enforcement
+alwaysApply: true
+---
+
+# Auth & Data Ownership (Clerk)
+
+All authentication in this repo is handled by **Clerk**.
+
+## Non-negotiable rule
+
+Users must only be able to **create/read/update/delete their own data**. Any attempt to access data that does not belong to the current user must be prevented server-side.
+
+## Implementation requirements
+
+- **Identity source**: Get the authenticated user id from Clerk on the server (do not trust client-provided `userId`).
+- **Authorization**: Every server action / route handler must enforce ownership before returning or mutating data.
+- **DB access**: All data tables that are user-scoped must include a `userId` owner field in the canonical Drizzle schema at [`src/db/schema.ts`](mdc:src/db/schema.ts).
+- **Query constraints**: All Drizzle queries for user-scoped data must filter by `userId` (and include it in `UPDATE`/`DELETE` `where` clauses).
+- **No insecure fallbacks**: Never “fetch then filter in JS” if the DB can enforce ownership in the `where` clause.
+
+## Quick checklist (before shipping)
+
+- **Auth**: Unauthenticated requests are rejected.
+- **Read**: No query can return rows for another `userId`.
+- **Write**: `UPDATE`/`DELETE` cannot affect rows for another `userId`.
+- **Create**: New rows are always stamped with the Clerk `userId` on the server.
