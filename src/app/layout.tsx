@@ -3,12 +3,10 @@ import { Poppins } from "next/font/google";
 import {
   ClerkProvider,
   Show,
-  SignInButton,
-  SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
 import { dark } from "@clerk/ui/themes";
-import { Button } from "@/components/ui/button";
+import { AuthButtons } from "@/components/auth/AuthButtons";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -47,12 +45,7 @@ export default function RootLayout({
         >
           <header className="w-full flex items-center justify-end gap-3 p-4">
             <Show when="signed-out">
-              <SignInButton mode="modal">
-                <Button variant="outline">Sign in</Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button>Sign up</Button>
-              </SignUpButton>
+              <AuthButtons />
             </Show>
             <Show when="signed-in">
               <UserButton />

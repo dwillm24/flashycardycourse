@@ -1,9 +1,20 @@
 ---
 alwaysApply: true
 ---
-# shadcn/ui
+# shadcn/ui (exclusive UI layer)
 
-This project uses [shadcn/ui](https://ui.shadcn.com/) for all UI. Prefer existing primitives from `components/ui/` (or the path configured after init) instead of ad-hoc HTML styling or other component libraries.
+**All user interface in this project must be built exclusively with [shadcn/ui](https://ui.shadcn.com/) components** from `components/ui/` (or the path configured in [components.json](mdc:components.json) after init).
+
+## Non-negotiable
+
+- **Do not create custom UI**: no bespoke styled wrappers, no one-off “component” files that duplicate shadcn patterns, no hand-rolled layouts marketed as reusable UI, and no substituting raw HTML elements for interactive or presentational UI where a shadcn primitive exists or can be added.
+- **Do not use other UI libraries** (e.g. other design systems or component kits) for app UI.
+- **Do not rely on ad-hoc HTML + CSS/Tailwind alone** for buttons, inputs, dialogs, cards, sheets, navigation chrome, or other standard UI—use the corresponding shadcn component (add it via the CLI if missing).
+- If something is missing from the design system, **add the official shadcn component** with the CLI, then compose from those primitives only.
+
+## Clerk authentication
+
+- **Sign-in, sign-up, and any other Clerk-triggering controls must use the shadcn `Button` component** (from the project’s UI path), not native `<button>`, not Clerk’s default unstyled or pre-styled button components as the outer control, and not custom-styled elements. Wrap or compose Clerk’s elements (e.g. `SignInButton`, `SignUpButton`, `UserButton` triggers) so the visible, clickable control is shadcn `Button`.
 
 ## Setup
 
@@ -15,10 +26,10 @@ npx shadcn@latest init
 
 ## Adding components
 
-If a needed primitive is missing, add it with the CLI, passing the component name from the shadcn docs. Example for the Button component:
+If a needed primitive is missing, add it with the CLI using the name from the shadcn docs. Example for the Button component:
 
 ```bash
 npx shadcn@latest add button
 ```
 
-Replace `button` with the desired component (e.g. `card`, `dialog`, `input`). After adding, import from the project’s configured UI path and compose pages from these pieces.
+Replace `button` with the desired component (e.g. `card`, `dialog`, `input`). Import only from the project’s configured UI path and compose pages from these pieces.
