@@ -33,6 +33,10 @@ export const cardsTable = pgTable(
       .references(() => decksTable.id, { onDelete: "cascade" }),
     front: text().notNull(),
     back: text().notNull(),
+    /** Display font preset: `sans` | `serif` | `mono`; null uses the app default. */
+    fontFamily: varchar("font_family", { length: 32 }),
+    /** Text color as `#RRGGBB`; null uses theme foreground. */
+    textColor: varchar("text_color", { length: 7 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

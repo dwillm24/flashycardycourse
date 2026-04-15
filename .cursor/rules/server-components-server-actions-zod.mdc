@@ -1,14 +1,18 @@
 ---
-description: Data access rules: reads in Server Components, writes in Server Actions, Zod-validated typed inputs (no FormData)
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Data access + validation rules
 
 ## Read vs write boundaries (non-negotiable)
 
 - **Data retrieval**: must be done via **Server Components** (no client-side data fetching for app data).
 - **DB mutations** (`INSERT` / `UPDATE` / `DELETE`): must be done via **Server Actions**.
+
+## Query layer (`src/db/queries`) (non-negotiable)
+
+- **All database reads and writes** must be implemented as **helper functions** (query modules) under [`src/db/queries/`](mdc:src/db/queries) — not inlined as ad-hoc Drizzle calls inside Server Components or Server Actions.
+- **Server Components** call read helpers from `src/db/queries/` to load data; **Server Actions** call mutation helpers from `src/db/queries/` after Zod validation.
+- **Purpose**: one place for Drizzle access patterns, reuse, and testing; UI and actions stay thin and orchestration-only.
 
 ## Validation (non-negotiable)
 

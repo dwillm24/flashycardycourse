@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
-import { desc, eq } from "drizzle-orm";
 import { CreateDeckButton } from "@/components/create-deck-button";
 import { DeckTile } from "@/components/deck-tile";
 import { Button } from "@/components/ui/button";
@@ -11,8 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { db } from "@/db";
-import { decksTable } from "@/db/schema";
+import { listDecksForUser } from "@/db/queries/decks";
 
 export const metadata = {
   title: "Dashboard | FlashyCardy",
@@ -23,13 +21,7 @@ export default async function DashboardPage() {
   const { userId } = await auth();
 
   const decks =
-    userId != null
-      ? await db
-          .select()
-          .from(decksTable)
-          .where(eq(decksTable.clerkUserId, userId))
-          .orderBy(desc(decksTable.updatedAt))
-      : [];
+    userId != null ? await listDecksForUser(userId) : [];
 
   return (
     <main className="flex-1 px-6 py-10">

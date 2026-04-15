@@ -3,8 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { db } from "@/db";
-import { decksTable } from "@/db/schema";
+import { createDeckForUser } from "@/db/queries/decks";
 
 export type CreateDeckInput = {
   title: string;
@@ -22,17 +21,10 @@ export async function createDeck(input: CreateDeckInput) {
 
   const parsed = createDeckInputSchema.parse(input);
 
-  const [row] = await db
-    .insert(decksTable)
-    .values({
-      clerkUserId: userId,
-      title: parsed.title,
-    })
-    .returning({ id: decksTable.id });
-
-  if (row == null) {
-    throw new Error("Failed to create deck");
-  }
+  const row = await createDeckForUser({
+    clerkUserId: userId,
+    title: parsed.title,
+  });
 
   redirect(`/dashboard/decks/${row.id}`);
 }

@@ -1,16 +1,13 @@
 import "dotenv/config";
-import { neon } from "@neondatabase/serverless";
-import { and, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/neon-http";
-import { cardsTable, decksTable } from "../src/db/schema";
+import {
+  listDeckSummariesForUser,
+} from "../src/db/queries/decks";
+import {
+  type DeckSeed,
+  upsertExampleDeckWithCards,
+} from "../src/db/queries/seed-example-decks";
 
 const TARGET_USER_ID = "user_3C52jz0xheFgH3tWqvKpFSg1R0T";
-
-type DeckSeed = {
-  title: string;
-  description: string;
-  cards: Array<{ front: string; back: string }>;
-};
 
 const seeds: DeckSeed[] = [
   {
@@ -110,64 +107,20 @@ function assertEnv() {
   }
 }
 
-async function upsertDeckWithCards(db: ReturnType<typeof drizzle>, seed: DeckSeed) {
-  const existingDeck = await db
-    .select({ id: decksTable.id })
-    .from(decksTable)
-    .where(
-      and(eq(decksTable.clerkUserId, TARGET_USER_ID), eq(decksTable.title, seed.title))
-    )
-    .limit(1);
-
-  const deckId =
-    existingDeck[0]?.id ??
-    (
-      await db
-        .insert(decksTable)
-        .values({
-          clerkUserId: TARGET_USER_ID,
-          title: seed.title,
-          description: seed.description,
-        })
-        .returning({ id: decksTable.id })
-    )[0]!.id;
-
-  const existingCard = await db
-    .select({ id: cardsTable.id })
-    .from(cardsTable)
-    .where(eq(cardsTable.deckId, deckId))
-    .limit(1);
-
-  if (existingCard.length > 0) {
-    return { deckId, createdDeck: existingDeck.length === 0, insertedCards: 0, skippedCards: true };
-  }
-
-  const cardRows = seed.cards.map((c) => ({
-    deckId,
-    front: c.front,
-    back: c.back,
-  }));
-
-  await db.insert(cardsTable).values(cardRows);
-
-  return { deckId, createdDeck: existingDeck.length === 0, insertedCards: cardRows.length, skippedCards: false };
-}
-
 async function main() {
   assertEnv();
 
-  const sql = neon(process.env.DATABASE_URL!);
-  const db = drizzle({ client: sql });
-
   const results = [];
   for (const seed of seeds) {
-    results.push(await upsertDeckWithCards(db, seed));
+    results.push(
+      await upsertExampleDeckWithCards({
+        clerkUserId: TARGET_USER_ID,
+        seed,
+      })
+    );
   }
 
-  const decksForUser = await db
-    .select({ id: decksTable.id, title: decksTable.title })
-    .from(decksTable)
-    .where(eq(decksTable.clerkUserId, TARGET_USER_ID));
+  const decksForUser = await listDeckSummariesForUser(TARGET_USER_ID);
 
   console.log("Seed complete.", {
     userId: TARGET_USER_ID,
@@ -181,4 +134,3 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
-

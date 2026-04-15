@@ -1,13 +1,8 @@
 import "dotenv/config";
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { decksTable } from "./db/schema";
-
-const sql = neon(process.env.DATABASE_URL!);
-const db = drizzle({ client: sql });
+import { listDecksLimit } from "@/db/queries/decks";
 
 async function main() {
-  const decks = await db.select().from(decksTable).limit(5);
+  const decks = await listDecksLimit(5);
   console.log("OK", { deckCount: decks.length });
 }
 

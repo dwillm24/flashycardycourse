@@ -5,9 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { decksTable } from "@/db/schema";
-
-type DeckRow = typeof decksTable.$inferSelect;
+import type { DeckRow } from "@/db/queries/decks";
 
 function formatDeckCreatedAt(createdAt: Date) {
   return createdAt.toLocaleDateString(undefined, {
