@@ -9,7 +9,7 @@ import {
   deleteCardForDeckOwner,
   updateCardForDeckOwner,
 } from "@/db/queries/cards";
-import { updateDeckForOwner } from "@/db/queries/decks";
+import { deleteDeckForOwner, updateDeckForOwner } from "@/db/queries/decks";
 import { CARD_FONT_OPTIONS } from "@/lib/card-appearance";
 
 const updateDeckSchema = z.object({
@@ -55,6 +55,38 @@ export async function updateDeck(input: UpdateDeckInput) {
 
   revalidatePath(`/dashboard/decks/${parsed.deckId}`);
   revalidatePath("/dashboard");
+}
+
+const deleteDeckSchema = z.object({
+  deckId: z.number().int().positive(),
+});
+
+export type DeleteDeckInput = {
+  deckId: number;
+};
+
+export async function deleteDeck(
+  input: DeleteDeckInput
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { userId } = await auth();
+  if (userId == null) {
+    redirect("/");
+  }
+
+  const parsed = deleteDeckSchema.parse(input);
+
+  const ok = await deleteDeckForOwner({
+    deckId: parsed.deckId,
+    clerkUserId: userId,
+  });
+
+  if (!ok) {
+    return { ok: false, error: "Deck not found or access denied" };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/decks/${parsed.deckId}/study`);
+  return { ok: true };
 }
 
 const hexColor = z

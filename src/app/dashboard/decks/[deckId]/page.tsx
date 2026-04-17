@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { DeckAddCardForm } from "@/components/deck-add-card-form";
 import { DeckCardEditor } from "@/components/deck-card-editor";
 import { DeckMetadataEditor } from "@/components/deck-metadata-editor";
+import { DeleteDeckDialog } from "@/components/delete-deck-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -71,6 +72,11 @@ export default async function DeckPage({ params }: PageProps) {
                 initialTitle={deck.title}
                 initialDescription={deck.description}
               />
+              <DeleteDeckDialog
+                deckId={id}
+                deckTitle={deck.title}
+                cardCount={cards.length}
+              />
             </div>
             {deck.description ? (
               <p className="text-muted-foreground">{deck.description}</p>
@@ -85,6 +91,19 @@ export default async function DeckPage({ params }: PageProps) {
               Back to dashboard
             </Button>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {cards.length > 0 ? (
+            <Button
+              nativeButton={false}
+              render={<Link href={`/decks/${id}/study`} />}
+            >
+              Start study session
+            </Button>
+          ) : (
+            <Button disabled>Start study session</Button>
+          )}
         </div>
 
         <section className="space-y-4" aria-label="Cards in this deck">

@@ -15,12 +15,14 @@ export async function listDecksForUser(clerkUserId: string): Promise<DeckRow[]> 
 export async function createDeckForUser(input: {
   clerkUserId: string;
   title: string;
+  description?: string | null;
 }): Promise<{ id: number }> {
   const [row] = await db
     .insert(decksTable)
     .values({
       clerkUserId: input.clerkUserId,
       title: input.title,
+      description: input.description ?? null,
     })
     .returning({ id: decksTable.id });
 
@@ -84,6 +86,23 @@ export async function updateDeckForOwner(input: {
       and(
         eq(decksTable.id, input.deckId),
         eq(decksTable.clerkUserId, input.clerkUserId)
+      )
+    )
+    .returning({ id: decksTable.id });
+
+  return rows.length > 0;
+}
+
+export async function deleteDeckForOwner(params: {
+  deckId: number;
+  clerkUserId: string;
+}): Promise<boolean> {
+  const rows = await db
+    .delete(decksTable)
+    .where(
+      and(
+        eq(decksTable.id, params.deckId),
+        eq(decksTable.clerkUserId, params.clerkUserId)
       )
     )
     .returning({ id: decksTable.id });

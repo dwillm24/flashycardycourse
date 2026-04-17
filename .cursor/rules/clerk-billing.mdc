@@ -1,0 +1,72 @@
+---
+alwaysApply: true
+---
+# Clerk Billing (B2C SaaS)
+
+This app uses **Clerk Billing** for subscriptions and payments (B2C: per-user plans). Billing is configured in the [Clerk Dashboard](https://dashboard.clerk.com/~/billing/settings). Plans and pricing live in Clerk; Stripe is used for payment processing only.
+
+**Beta**: Clerk Billing APIs are experimental; prefer [pinning](https://clerk.com/docs/pinning.md) Clerk SDK and `clerk-js` versions to reduce breakage.
+
+## Canonical plan and feature slugs (this repo)
+
+Use these **exact** string identifiers in code and in the [Clerk Dashboard](https://dashboard.clerk.com/~/billing/plans). Do not invent alternate slugs in app code.
+
+Map Features to Plans in the Dashboard so subscription changes automatically grant or revoke entitlements. App logic should enforce the same rules server-side (deck counts, AI routes, etc.) using `has()` plus data checks where needed.
+
+### Plans
+
+| Slug | Summary | Intended use in this app |
+|------|---------|---------------------------|
+| `free_user` | Default **no-cost** tier for signed-in users. | Baseline product access: study, create decks, and use core flows without a paid subscription. Typically paired in Dashboard with the `3_deck_limit` feature (and **not** with `unlimited_decks` / `ai_flashcard_generation`, unless you intentionally change that). |
+| `pro` | **Paid** subscription tier. | Full premium experience: should include **`unlimited_decks`** and **`ai_flashcard_generation`** via Dashboard feature attachments. Use `has({ plan: 'pro' })` when the whole tier matters; prefer **feature** checks when gating a specific capability (deck cap vs AI). |
+
+### Features
+
+Features are **entitlements**—use them for fine-grained gates (UI and server actions). Check with `has({ feature: '...' })` or `<Show when={{ feature: '...' }}>`.
+
+| Slug | Summary | Intended use in this app |
+|------|---------|---------------------------|
+| `3_deck_limit` | User is subject to a **maximum of three decks**. | Assign to the **free** plan. Enforcement: when creating a deck, reject if `has({ feature: '3_deck_limit' })` is true **and** current deck count ≥ 3 (still enforce count in DB queries with `userId`). Users with **`unlimited_decks`** should not rely on this limit. |
+| `unlimited_decks` | **No deck count cap** from a billing perspective. | Assign to **`pro`** (or any plan that should allow more than three decks). Enforcement: allow new decks when `has({ feature: 'unlimited_decks' })` is true; otherwise apply the `3_deck_limit` rule. |
+| `ai_flashcard_generation` | Access to **AI-powered flashcard generation** (e.g. generate cards from text or prompts). | Assign to **`pro`**. Gate AI routes, server actions, and UI entry points on `has({ feature: 'ai_flashcard_generation' })`; never expose generation only on the client. |
+
+### How plans and features work together
+
+- **Plans** answer “which subscription product is this user on?” (`free_user` vs `pro`).
+- **Features** answer “what is this user allowed to do?” (deck cap vs unlimited, AI on vs off).
+- Prefer **feature** checks for behavior (limits, AI). Use **plan** checks when the product requirement is literally “Pro subscribers only” as a bundle, or for messaging that refers to the named tier.
+
+## Pricing UI
+
+- Prefer a **dedicated route** (e.g. `app/pricing/page.tsx`) that renders Clerk’s `<PricingTable />` from `@clerk/nextjs`.
+- Compose the **page chrome** (layout, spacing, navigation) with this project’s shadcn/ui primitives per [shadcn-ui.mdc](mdc:.cursor/rules/shadcn-ui.mdc); `<PricingTable />` itself comes from Clerk.
+
+## Access control
+
+Gate **routes, server actions, and UI** using **Plans** and/or **Features**—not ad-hoc flags.
+
+### Server (recommended for pages and mutations)
+
+Use `has()` from the Clerk `auth` object (`@clerk/nextjs/server`):
+
+```ts
+const { has } = await auth()
+const isPro = has({ plan: 'pro' })
+const unlimited = has({ feature: 'unlimited_decks' })
+```
+
+Reject or redirect when `has()` is false; never rely on the client alone for authorization.
+
+### Client / shared components
+
+Use `<Show>` from `@clerk/nextjs` with `when={{ plan: '...' }}` or `when={{ feature: '...' }}` and a `fallback` for users without access.
+
+### Ownership
+
+Billing does not replace auth checks: still enforce [Clerk auth & data ownership](mdc:.cursor/rules/clerk-auth-data-ownership.mdc) on every server path (`userId` from Clerk, never from the client).
+
+## Dashboard concepts (short)
+
+- **Plans for Users** tab for B2C user subscriptions.
+- **Publicly available**: controls visibility in Clerk components (e.g. `<PricingTable />`, `<UserProfile />` for user plans).
+- **Development gateway** vs **own Stripe account**: use Clerk’s test gateway in development; production uses a separate Stripe account as required by Clerk.
