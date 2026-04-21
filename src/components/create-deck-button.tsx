@@ -19,7 +19,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-export function CreateDeckButton() {
+type CreateDeckButtonProps = {
+  disabled?: boolean;
+};
+
+export function CreateDeckButton({ disabled = false }: CreateDeckButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -65,7 +69,14 @@ export function CreateDeckButton() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
-          <Button>
+          <Button
+            disabled={disabled}
+            title={
+              disabled
+                ? "Free plan is limited to 3 decks. Upgrade on the Pricing page."
+                : undefined
+            }
+          >
             <Plus data-icon="inline-start" aria-hidden />
             Create New Deck
           </Button>

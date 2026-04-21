@@ -1,0 +1,45 @@
+---
+alwaysApply: true
+---
+# Vercel AI + OpenAI (flashcard generation)
+
+This app uses the **[Vercel AI SDK](https://sdk.vercel.ai/docs)** (`ai` on npm) to call **OpenAI** for AI features, especially **AI flashcard generation**.
+
+## Product and access
+
+- Gate routes, server actions, and UI on Clerk **`ai_flashcard_generation`** (see [clerk-billing.mdc](mdc:.cursor/rules/clerk-billing.mdc)); enforce the same checks server-side—never only on the client.
+- Keep AI calls on the **server** (Server Actions or Route Handlers), validate inputs with **Zod**, and persist cards via Drizzle query helpers per [server-components-server-actions-zod.mdc](mdc:.cursor/rules/server-components-server-actions-zod.mdc) and [drizzle-db-access.mdc](mdc:.cursor/rules/drizzle-db-access.mdc).
+
+## Structured output: array of N cards (`front` / `back`)
+
+Use **`generateText`** with **`Output.object`** and a Zod schema whose **`cards`** array uses **`.length(cardCount)`** so the model must return exactly that many items. Build the schema when `cardCount` is known at runtime (do not hard-code the length in a static schema unless it is fixed).
+
+```typescript
+import { generateText, Output } from "ai";
+import { z } from "zod";
+
+const cardCount = 10;
+
+const flashcardsOutputSchema = z.object({
+  cards: z
+    .array(
+      z.object({
+        front: z.string(),
+        back: z.string(),
+      }),
+    )
+    .length(cardCount),
+});
+
+const { output } = await generateText({
+  model: "openai/gpt-5.3-chat",
+  output: Output.object({
+    schema: flashcardsOutputSchema,
+  }),
+  prompt: `Generate exactly ${cardCount} flashcards for the following topic or source material. Each card must have a concise front (question or prompt) and a clear back (answer). ...`,
+});
+
+// output.cards — { front: string; back: string }[], length === cardCount
+```
+
+Adjust the **`model`** string to match the project’s chosen OpenAI model id and any pinning in `package.json`. Keep prompts explicit about **exactly `cardCount` cards** to align with the schema.

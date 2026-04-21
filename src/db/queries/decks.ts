@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { decksTable } from "@/db/schema";
 
@@ -10,6 +10,15 @@ export async function listDecksForUser(clerkUserId: string): Promise<DeckRow[]> 
     .from(decksTable)
     .where(eq(decksTable.clerkUserId, clerkUserId))
     .orderBy(desc(decksTable.updatedAt));
+}
+
+export async function countDecksForUser(clerkUserId: string): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(decksTable)
+    .where(eq(decksTable.clerkUserId, clerkUserId));
+
+  return Number(row?.value ?? 0);
 }
 
 export async function createDeckForUser(input: {

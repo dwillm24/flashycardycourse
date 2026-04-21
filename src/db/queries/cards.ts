@@ -73,6 +73,46 @@ export async function createCardForDeckOwner(input: {
   return row;
 }
 
+export async function createCardsBatchForDeckOwner(input: {
+  deckId: number;
+  clerkUserId: string;
+  cards: Array<{ front: string; back: string }>;
+}): Promise<{ inserted: number } | null> {
+  if (input.cards.length === 0) {
+    return { inserted: 0 };
+  }
+
+  const [deck] = await db
+    .select({ id: decksTable.id })
+    .from(decksTable)
+    .where(
+      and(
+        eq(decksTable.id, input.deckId),
+        eq(decksTable.clerkUserId, input.clerkUserId)
+      )
+    )
+    .limit(1);
+
+  if (deck == null) {
+    return null;
+  }
+
+  const rows = await db
+    .insert(cardsTable)
+    .values(
+      input.cards.map((c) => ({
+        deckId: input.deckId,
+        front: c.front,
+        back: c.back,
+        fontFamily: null,
+        textColor: null,
+      }))
+    )
+    .returning({ id: cardsTable.id });
+
+  return { inserted: rows.length };
+}
+
 export async function updateCardForDeckOwner(input: {
   deckId: number;
   cardId: number;

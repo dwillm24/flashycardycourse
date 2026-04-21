@@ -7,6 +7,7 @@ import {
 } from "@clerk/nextjs";
 import { dark } from "@clerk/ui/themes";
 import { AuthButtons } from "@/components/auth/AuthButtons";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -43,15 +44,17 @@ export default function RootLayout({
             },
           }}
         >
-          <header className="w-full flex items-center justify-end gap-3 p-4">
-            <Show when="signed-out">
-              <AuthButtons />
-            </Show>
-            <Show when="signed-in">
-              <UserButton />
-            </Show>
-          </header>
-          {children}
+          <TooltipProvider>
+            <header className="w-full flex items-center justify-end gap-3 p-4">
+              <Show when="signed-out">
+                <AuthButtons />
+              </Show>
+              <Show when="signed-in">
+                <UserButton />
+              </Show>
+            </header>
+            {children}
+          </TooltipProvider>
         </ClerkProvider>
       </body>
     </html>

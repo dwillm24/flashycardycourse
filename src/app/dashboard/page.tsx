@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { listDecksForUser } from "@/db/queries/decks";
+import { isDeckCreationBlocked } from "@/lib/deck-limits";
 
 export const metadata = {
   title: "Dashboard | FlashyCardy",
@@ -18,10 +19,13 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  const { userId } = await auth();
+  const { userId, has } = await auth();
 
   const decks =
     userId != null ? await listDecksForUser(userId) : [];
+
+  const deckCreationBlocked =
+    userId != null && isDeckCreationBlocked(has, decks.length);
 
   return (
     <main className="flex-1 px-6 py-10">
@@ -75,8 +79,28 @@ export default async function DashboardPage() {
         )}
 
         {userId ? (
-          <div className="flex justify-center pt-4 sm:justify-start">
-            <CreateDeckButton />
+          <div className="space-y-4 pt-4">
+            {deckCreationBlocked ? (
+              <Card className="border-muted-foreground/25 bg-muted/30">
+                <CardContent className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    You&apos;re using all 3 decks included on the free plan.
+                    Upgrade to Pro for unlimited decks and AI flashcard
+                    generation.
+                  </p>
+                  <Button
+                    className="shrink-0 self-start sm:self-center"
+                    nativeButton={false}
+                    render={<Link href="/pricing" />}
+                  >
+                    View plans
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : null}
+            <div className="flex justify-center sm:justify-start">
+              <CreateDeckButton disabled={deckCreationBlocked} />
+            </div>
           </div>
         ) : null}
       </div>

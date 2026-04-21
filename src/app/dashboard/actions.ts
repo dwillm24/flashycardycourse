@@ -4,7 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createDeckForUser } from "@/db/queries/decks";
+import { countDecksForUser, createDeckForUser } from "@/db/queries/decks";
+import { isDeckCreationBlocked } from "@/lib/deck-limits";
 
 export type CreateDeckInput = {
   title: string;
@@ -27,7 +28,7 @@ export type CreateDeckResult =
   | { ok: false; error: string };
 
 export async function createDeck(input: CreateDeckInput): Promise<CreateDeckResult> {
-  const { userId } = await auth();
+  const { userId, has } = await auth();
   if (userId == null) {
     redirect("/");
   }
@@ -36,6 +37,15 @@ export async function createDeck(input: CreateDeckInput): Promise<CreateDeckResu
   if (!parsed.success) {
     const message = parsed.error.issues[0]?.message ?? "Invalid input";
     return { ok: false, error: message };
+  }
+
+  const deckCount = await countDecksForUser(userId);
+  if (isDeckCreationBlocked(has, deckCount)) {
+    return {
+      ok: false,
+      error:
+        "Your plan allows up to 3 decks. Upgrade to Pro for unlimited decks.",
+    };
   }
 
   const row = await createDeckForUser({

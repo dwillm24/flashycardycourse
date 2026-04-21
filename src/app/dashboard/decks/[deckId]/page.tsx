@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { DeckAddCardForm } from "@/components/deck-add-card-form";
+import { DeckAiGenerateButton } from "@/components/deck-ai-generate-button";
 import { DeckCardEditor } from "@/components/deck-card-editor";
 import { DeckMetadataEditor } from "@/components/deck-metadata-editor";
 import { DeleteDeckDialog } from "@/components/delete-deck-dialog";
@@ -42,10 +43,13 @@ export default async function DeckPage({ params }: PageProps) {
     notFound();
   }
 
-  const { userId } = await auth();
+  const { userId, has } = await auth();
   if (!userId) {
     redirect("/");
   }
+
+  const canUseAiFlashcards =
+    has({ plan: "pro" }) || has({ feature: "ai_flashcard_generation" });
 
   const deck = await getDeckForOwner({ deckId: id, clerkUserId: userId });
 
@@ -57,6 +61,16 @@ export default async function DeckPage({ params }: PageProps) {
     deckId: id,
     clerkUserId: userId,
   });
+
+  const trimmedDeckTitle = deck.title.trim();
+  const trimmedDeckDescription = deck.description?.trim() ?? "";
+  const aiGenerateAvailability = !canUseAiFlashcards
+    ? "billing"
+    : trimmedDeckTitle.length === 0
+      ? "needs_title"
+      : trimmedDeckDescription.length === 0
+        ? "needs_description"
+        : "ready";
 
   return (
     <main className="flex-1 px-6 py-10">
@@ -93,7 +107,7 @@ export default async function DeckPage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           {cards.length > 0 ? (
             <Button
               nativeButton={false}
@@ -104,6 +118,7 @@ export default async function DeckPage({ params }: PageProps) {
           ) : (
             <Button disabled>Start study session</Button>
           )}
+          <DeckAiGenerateButton deckId={id} availability={aiGenerateAvailability} />
         </div>
 
         <section className="space-y-4" aria-label="Cards in this deck">
