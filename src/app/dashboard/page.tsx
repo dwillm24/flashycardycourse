@@ -125,14 +125,14 @@ export default async function DashboardPage() {
                       ) : (
                         <div className="flex-1" />
                       )}
-                      <div className="text-muted-foreground flex items-center justify-between gap-3 text-xs">
+                      <div className="text-muted-foreground flex w-full items-center gap-3 text-xs">
                         <span>
                           {deck.cardCount} card
                           {deck.cardCount === 1 ? "" : "s"}
                         </span>
                         <time
                           dateTime={deck.updatedAt.toISOString()}
-                          className="shrink-0 tabular-nums"
+                          className="ml-auto shrink-0 pl-6 text-right tabular-nums"
                         >
                           {formatDeckUpdatedAt(deck.updatedAt)}
                         </time>
