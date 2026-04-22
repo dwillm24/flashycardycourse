@@ -1,15 +1,40 @@
 import { and, count, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { decksTable } from "@/db/schema";
+import { cardsTable, decksTable } from "@/db/schema";
 
 export type DeckRow = typeof decksTable.$inferSelect;
+export type DeckWithCardCountRow = DeckRow & { cardCount: number };
 
-export async function listDecksForUser(clerkUserId: string): Promise<DeckRow[]> {
-  return db
-    .select()
+export async function listDecksForUser(
+  clerkUserId: string
+): Promise<DeckWithCardCountRow[]> {
+  const rows = await db
+    .select({
+      id: decksTable.id,
+      clerkUserId: decksTable.clerkUserId,
+      title: decksTable.title,
+      description: decksTable.description,
+      createdAt: decksTable.createdAt,
+      updatedAt: decksTable.updatedAt,
+      cardCount: count(cardsTable.id),
+    })
     .from(decksTable)
+    .leftJoin(cardsTable, eq(cardsTable.deckId, decksTable.id))
     .where(eq(decksTable.clerkUserId, clerkUserId))
+    .groupBy(
+      decksTable.id,
+      decksTable.clerkUserId,
+      decksTable.title,
+      decksTable.description,
+      decksTable.createdAt,
+      decksTable.updatedAt
+    )
     .orderBy(desc(decksTable.updatedAt));
+
+  return rows.map((row) => ({
+    ...row,
+    cardCount: Number(row.cardCount),
+  }));
 }
 
 export async function countDecksForUser(clerkUserId: string): Promise<number> {
