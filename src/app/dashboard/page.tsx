@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import { count, desc, eq } from "drizzle-orm";
 import { CreateDeckButton } from "@/components/create-deck-button";
-import { DeckTile } from "@/components/deck-tile";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,7 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { listDecksForUser } from "@/db/queries/decks";
+import { db } from "@/db";
+import { cardsTable, decksTable } from "@/db/schema";
 import { isDeckCreationBlocked } from "@/lib/deck-limits";
 
 export const metadata = {
@@ -18,11 +19,47 @@ export const metadata = {
   description: "Manage your flashcards and decks",
 };
 
+function formatDeckUpdatedAt(updatedAt: Date) {
+  return updatedAt.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default async function DashboardPage() {
   const { userId, has } = await auth();
 
   const decks =
-    userId != null ? await listDecksForUser(userId) : [];
+    userId != null
+      ? (
+          await db
+            .select({
+              id: decksTable.id,
+              title: decksTable.title,
+              description: decksTable.description,
+              updatedAt: decksTable.updatedAt,
+              cardCount: count(cardsTable.id),
+            })
+            .from(decksTable)
+            .leftJoin(cardsTable, eq(cardsTable.deckId, decksTable.id))
+            .where(eq(decksTable.clerkUserId, userId))
+            .groupBy(
+              decksTable.id,
+              decksTable.title,
+              decksTable.description,
+              decksTable.updatedAt
+            )
+            .orderBy(desc(decksTable.updatedAt))
+        ).map((deck) => ({
+          ...deck,
+          updatedAt:
+            deck.updatedAt instanceof Date
+              ? deck.updatedAt
+              : new Date(deck.updatedAt),
+          cardCount: Number(deck.cardCount),
+        }))
+      : [];
 
   const deckCreationBlocked =
     userId != null && isDeckCreationBlocked(has, decks.length);
@@ -71,8 +108,38 @@ export default async function DashboardPage() {
         {userId && decks.length > 0 && (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {decks.map((deck) => (
-              <li key={deck.id}>
-                <DeckTile deck={deck} />
+              <li key={deck.id} className="h-full">
+                <Link
+                  href={`/dashboard/decks/${deck.id}`}
+                  className="group block h-full rounded-xl outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <Card className="flex h-44 flex-col transition-colors group-hover:bg-muted/40 group-hover:ring-foreground/20">
+                    <CardHeader className="flex h-full flex-col space-y-3">
+                      <CardTitle className="line-clamp-2 pr-1">
+                        {deck.title}
+                      </CardTitle>
+                      {deck.description ? (
+                        <CardDescription className="line-clamp-2 flex-1">
+                          {deck.description}
+                        </CardDescription>
+                      ) : (
+                        <div className="flex-1" />
+                      )}
+                      <div className="text-muted-foreground flex w-full items-center gap-3 text-xs">
+                        <span>
+                          {deck.cardCount} card
+                          {deck.cardCount === 1 ? "" : "s"}
+                        </span>
+                        <time
+                          dateTime={deck.updatedAt.toISOString()}
+                          className="ml-auto shrink-0 pl-6 text-right tabular-nums"
+                        >
+                          {formatDeckUpdatedAt(deck.updatedAt)}
+                        </time>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </Link>
               </li>
             ))}
           </ul>
